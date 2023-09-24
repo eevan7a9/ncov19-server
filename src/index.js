@@ -23,8 +23,23 @@ app.get('/', (req, res) => {
     res.send('Hello, Server!');
 });
 app.get('/global-cases', (req, res) => {
-    res.send('Hello, global-cases!');
+    const jsonFilePath = path.join(__dirname, '..', 'output', 'global-total-case.json');
+
+    fs.readFile(jsonFilePath, 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading JSON file:', err);
+            res.status(500).json({ error: 'Internal Server Error' });
+            return;
+        }
+        try {
+            res.json(JSON.parse(data));
+        } catch (parseError) {
+            console.error('Error parsing JSON:', parseError);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
 });
+
 app.get('/country/:country', (req, res) => {
     const country = req.params.country;
     const jsonFilePath = path.join(__dirname, '..', 'output', 'countries-overtime-case.json');
