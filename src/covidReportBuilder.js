@@ -72,7 +72,7 @@ export const generateGlobelCase = function () {
         });
 }
 
-const parseMonthlyCaseNewFormat = function (jsonData = []) {
+const parseDailyCaseNewFormat = function (jsonData = []) {
     const newForm = {};
 
     for (let i = 0; i < jsonData.length; i++) {
@@ -92,6 +92,7 @@ const parseMonthlyCaseNewFormat = function (jsonData = []) {
         if (!newForm[country]) {
             newForm[country] = {
                 country: formatData.country,
+                countryCode: formatData.countryCode,
                 data: [formatData]
             }
             continue;
@@ -101,14 +102,14 @@ const parseMonthlyCaseNewFormat = function (jsonData = []) {
         }
     }
 
-    return Object.keys(newForm).map((key) => ({ [key]: newForm[key] }))
+    return Object.keys(newForm).map((key) => (newForm[key]))
 }
 
-export const generateMonthlyCase = function () {
+export const generateOvertimeCase = function () {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const scriptDirectory = __dirname;
-    const csvFile = join(scriptDirectory, "assets/countries-monthly-case/WHO-COVID-19-global-data.csv");
+    const csvFile = join(scriptDirectory, "assets/countries-overtime-case/WHO-COVID-19-global-data.csv");
     const results = [];
 
     createReadStream(csvFile)
@@ -118,8 +119,8 @@ export const generateMonthlyCase = function () {
         })
         .on('end', () => {
             // Write the JSON data to the output file
-            const newFormatJson = JSON.stringify(parseMonthlyCaseNewFormat(results), null, 2);
-            writeFile("output/global-monthly-case.json", newFormatJson, 'utf8', (err) => {
+            const newFormatJson = JSON.stringify(parseDailyCaseNewFormat(results), null, 2);
+            writeFile("output/countries-overtime-case.json", newFormatJson, 'utf8', (err) => {
                 if (err) {
                     console.error('Error writing JSON file:', err);
                 } else {
