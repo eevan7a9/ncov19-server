@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { generateGlobelCase, generateOvertimeCase } from "./covidReportBuilder.js";
+import { generateGlobelCase, generateOvertimeCase, generateCountriesAffected } from "./covidReportBuilder.js";
 
 dotenv.config();
 
@@ -11,6 +11,7 @@ if (process.env.DISABLE_GENERATE_CASES !== 'true') {
     // generate Monthly & Total Cases into output/
     generateGlobelCase();
     generateOvertimeCase();
+    generateCountriesAffected();
 }
 
 const app = express();

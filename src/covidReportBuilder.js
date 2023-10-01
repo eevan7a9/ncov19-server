@@ -4,6 +4,33 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const scriptDirectory = __dirname;
+
+const gererateFile = function (path = '', csvFile, callbackFunc) {
+    const results = [];
+    createReadStream(csvFile)
+        .pipe(csv())
+        .on('data', (data) => {
+            results.push(data);
+        })
+        .on('end', () => {
+            // Write the JSON data to the output file
+            const newFormatJson = JSON.stringify(callbackFunc(results), null, 2);
+            writeFile(path, newFormatJson, 'utf8', (err) => {
+                if (err) {
+                    console.error('Error writing JSON file:', err);
+                } else {
+                    console.log('JSON file has been created.');
+                }
+            });
+        })
+        .on('error', (error) => {
+            console.error('Error reading CSV file:', error);
+        });
+}
+
 const parseGlobalCaseNewFormat = function (jsonData) {
     return jsonData.map((item) => {
         const newFormat = {
@@ -34,42 +61,9 @@ const parseGlobalCaseNewFormat = function (jsonData) {
 
 
 
-// Helper function to sanitize JSON attributes
-const sanitizeAttributes = function (obj) {
-    for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            obj[key] = obj[key].toString().trim();
-        }
-    }
-}
-
 export const generateGlobelCase = function () {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const scriptDirectory = __dirname;
     const csvFile = join(scriptDirectory, "assets/global-total-case/WHO-COVID-19-global-table-data.csv");
-    const results = [];
-
-    // Read the CSV file with 'utf8' encoding and remove BOM explicitly
-    createReadStream(csvFile, { encoding: "utf8" })
-        .pipe(csv())
-        .on("data", (data) => {
-            sanitizeAttributes(data);
-            results.push(data);
-        })
-        .on("end", () => {
-            writeFile("output/global-total-case.json", JSON.stringify(parseGlobalCaseNewFormat(results)), "utf8", (err) => {
-                if (err) {
-                    console.error("Error writing JSON file:", err);
-                } else {
-                    console.log("db.json file has been created.");
-                    // console.log(results)
-                }
-            });
-        })
-        .on("error", (error) => {
-            console.error("Error reading CSV file:", error);
-        });
+    gererateFile("output/global-total-case.json", csvFile, parseGlobalCaseNewFormat)
 }
 
 const parseDailyCaseNewFormat = function (jsonData = []) {
@@ -106,29 +100,30 @@ const parseDailyCaseNewFormat = function (jsonData = []) {
 }
 
 export const generateOvertimeCase = function () {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const scriptDirectory = __dirname;
     const csvFile = join(scriptDirectory, "assets/countries-overtime-case/WHO-COVID-19-global-data.csv");
-    const results = [];
-
-    createReadStream(csvFile)
-        .pipe(csv())
-        .on('data', (data) => {
-            results.push(data);
-        })
-        .on('end', () => {
-            // Write the JSON data to the output file
-            const newFormatJson = JSON.stringify(parseDailyCaseNewFormat(results), null, 2);
-            writeFile("output/countries-overtime-case.json", newFormatJson, 'utf8', (err) => {
-                if (err) {
-                    console.error('Error writing JSON file:', err);
-                } else {
-                    console.log('JSON file has been created.');
-                }
-            });
-        })
-        .on('error', (error) => {
-            console.error('Error reading CSV file:', error);
-        });
+    gererateFile("output/countries-overtime-case.json", csvFile, parseDailyCaseNewFormat)
 }
+
+const getCountries = function (jsonData = []) {
+    const countries = {};
+
+    for (let i = 0; i < jsonData.length; i++) {
+        const item = jsonData[i];
+        if (countries[item.Country_code]) {
+            continue
+        }
+        const newFormat = {
+            countryCode: item.Country_code,
+            country: item.Country,
+            whoRegion: item.WHO_region
+        }
+        countries[newFormat.countryCode] = newFormat;
+    }
+    return Object.keys(countries).map((key) => (countries[key]))
+}
+
+export const generateCountriesAffected = function () {
+    const csvFile = join(scriptDirectory, "assets/countries-overtime-case/WHO-COVID-19-global-data.csv");
+    gererateFile("output/countries-list.json", csvFile, getCountries)
+}
+
