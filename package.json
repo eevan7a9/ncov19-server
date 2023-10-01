@@ -9,7 +9,7 @@
     "start": "node src/index.js"
   },
   "author": "eevan7a9",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "csv-parser": "^3.0.0",
     "dotenv": "^16.3.1",
