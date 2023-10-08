@@ -8,10 +8,16 @@ import { generateGlobelCase, generateOvertimeCase, generateCountriesAffected } f
 dotenv.config();
 
 if (process.env.DISABLE_GENERATE_CASES !== 'true') {
-    // generate Monthly & Total Cases into output/
-    generateGlobelCase();
-    generateOvertimeCase();
-    generateCountriesAffected();
+    (async () => {
+        try {
+            // generate Monthly & Total Cases into output/
+            await generateCountriesAffected();
+            await generateOvertimeCase();
+            await generateGlobelCase();
+        } catch (error) {
+            console.error('Error Generating Files:', error);
+        }
+    })();
 }
 
 const app = express();

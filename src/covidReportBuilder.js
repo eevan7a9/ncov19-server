@@ -1,41 +1,59 @@
-import { createReadStream, writeFile } from "fs";
+import { createReadStream, writeFile, readFile } from "fs";
 import csv from "csv-parser";
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { promisify } from "util";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const scriptDirectory = __dirname;
+const writeFileAsync = promisify(writeFile);
+const readFileAsync = promisify(readFile);
 
-const gererateFile = function (path = '', csvFile, callbackFunc) {
-    const results = [];
-    createReadStream(csvFile)
-        .pipe(csv())
-        .on('data', (data) => {
-            results.push(data);
-        })
-        .on('end', () => {
-            // Write the JSON data to the output file
-            const newFormatJson = JSON.stringify(callbackFunc(results), null, 2);
-            writeFile(path, newFormatJson, 'utf8', (err) => {
-                if (err) {
-                    console.error('Error writing JSON file:', err);
-                } else {
-                    console.log('JSON file has been created.');
-                }
-            });
-        })
-        .on('error', (error) => {
-            console.error('Error reading CSV file:', error);
+const gererateFile = async function (path = '', csvFile, callbackFunc) {
+    try {
+        const results = []
+        await new Promise((resolve, reject) => {
+            createReadStream(csvFile)
+                .pipe(csv())
+                .on('data', (data) => {
+                    results.push(data);
+                })
+                .on('end', () => {
+                    resolve();
+                })
+                .on('error', (error) => {
+                    reject(error)
+                    console.error('Error reading CSV file:', error);
+                });
         });
+        // Write the JSON data to the output file
+        const newFormat = await callbackFunc(results)
+        const newFormatJson = JSON.stringify(newFormat, null, 2);
+        await writeFileAsync(path, newFormatJson, 'utf8');
+        console.log('JSON file has been created.');
+    } catch (error) {
+        console.error('Error writing JSON file:', error);
+    }
 }
 
-const parseGlobalCaseNewFormat = function (jsonData) {
+const parseGlobalCaseNewFormat = async function (jsonData) {
+    let countries = [];
+    try {
+        const data = await readFileAsync(join(scriptDirectory, "../output/countries-list.json"), 'utf8');
+        countries = JSON.parse(data)
+    } catch (parseError) {
+        console.error('Error reading "countries-list.json" JSON:', parseError);
+    }
     return jsonData.map((item) => {
+        const name = item.Name || item["Name"] || item["﻿Name"];
+        const foundCountry = countries.find(country => country.country === name);
+        const countryCode = foundCountry?.countryCode;
         const newFormat = {
             whoRegion: item["WHO Region"],
-            name: item.Name || item["Name"] || item["﻿Name"],
+            name,
+            countryCode,
             casesCumulativeTotal: item["Cases - cumulative total"],
             casesCumulativeTotalPer100000Population:
                 item["Cases - cumulative total per 100000 population"],
@@ -59,11 +77,9 @@ const parseGlobalCaseNewFormat = function (jsonData) {
     });
 };
 
-
-
-export const generateGlobelCase = function () {
+export const generateGlobelCase = async function () {
     const csvFile = join(scriptDirectory, "assets/global-total-case/WHO-COVID-19-global-table-data.csv");
-    gererateFile("output/global-total-case.json", csvFile, parseGlobalCaseNewFormat)
+    await gererateFile("output/global-total-case.json", csvFile, parseGlobalCaseNewFormat)
 }
 
 const parseDailyCaseNewFormat = function (jsonData = []) {
@@ -99,9 +115,9 @@ const parseDailyCaseNewFormat = function (jsonData = []) {
     return Object.keys(newForm).map((key) => (newForm[key]))
 }
 
-export const generateOvertimeCase = function () {
+export const generateOvertimeCase = async function () {
     const csvFile = join(scriptDirectory, "assets/countries-overtime-case/WHO-COVID-19-global-data.csv");
-    gererateFile("output/countries-overtime-case.json", csvFile, parseDailyCaseNewFormat)
+    await gererateFile("output/countries-overtime-case.json", csvFile, parseDailyCaseNewFormat)
 }
 
 const getCountries = function (jsonData = []) {
@@ -122,8 +138,8 @@ const getCountries = function (jsonData = []) {
     return Object.keys(countries).map((key) => (countries[key]))
 }
 
-export const generateCountriesAffected = function () {
+export const generateCountriesAffected = async function () {
     const csvFile = join(scriptDirectory, "assets/countries-overtime-case/WHO-COVID-19-global-data.csv");
-    gererateFile("output/countries-list.json", csvFile, getCountries)
+    await gererateFile("output/countries-list.json", csvFile, getCountries)
 }
 
