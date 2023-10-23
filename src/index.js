@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { generateGlobelCase, generateOvertimeCase, generateCountriesAffected } from "./covidReportBuilder.js";
+import cors from 'cors';
 
 dotenv.config();
 
@@ -21,6 +22,12 @@ if (process.env.DISABLE_GENERATE_CASES !== 'true') {
 }
 
 const app = express();
+app.use(cors({
+    origin: ['http://localhost:3000'],
+    methods: 'GET',
+    optionsSuccessStatus: 204,
+}));
+
 const port = process.env.PORT;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
