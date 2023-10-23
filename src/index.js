@@ -48,7 +48,7 @@ app.get('/global-cases', (req, res) => {
 });
 
 app.get('/country/:country', (req, res) => {
-    const country = req.params.country;
+    const country = req.params.country?.toLowerCase();
     const jsonFilePath = path.join(__dirname, '..', 'output', 'countries-overtime-case.json');
 
     fs.readFile(jsonFilePath, 'utf8', (err, data) => {
@@ -59,7 +59,7 @@ app.get('/country/:country', (req, res) => {
         }
         try {
             const countries = JSON.parse(data);
-            const foundCountry = countries.find(item => item.country === country || item.countryCode === country);
+            const foundCountry = countries.find(item => item.country.toLowerCase() === country || item.countryCode.toLowerCase() === country);
             res.json(foundCountry);
         } catch (parseError) {
             console.error('Error parsing JSON:', parseError);
